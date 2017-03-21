@@ -1,0 +1,9 @@
+[package]
+name = "kagami"
+version = "0.1.0"
+authors = ["Antti Tönkyrä <daedalus@pingtimeout.net>"]
+
+[dependencies]
+snmp = "0.2.1"
+zmq = "0.8"
+serde_json = "0.9"
