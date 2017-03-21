@@ -71,20 +71,42 @@ fn main() {
         let result = msg.as_str().unwrap();
         let cmd: serde_json::Value = serde_json::from_str(result).unwrap();
         if cmd["action"] == "walk" {
-            let mut resp_values : Vec<serde_json::Value> = Vec::new();
-            resp_values.push(json!({
-                "oid": "1.2.3.4.5.6",
-                "value": 1337
-            }));
-            resp_values.push(json!({
-                "oid": "1.2.3.4.6.6",
-                "value": "eth0"
-            }));
-            let resp = json!({
-                "status": "ok",
-                "data": resp_values
-            });
-            while socket.send_str(&resp.to_string(), 0).is_err() {}
+            if let Some(ref oid) = cmd["oid"].as_str() {
+                let mut oidvec: Vec<u32> = Vec::new();
+                for snum in oid.split(".") {
+                    let res: Result<u32, std::num::ParseIntError> = snum.parse();
+                    if res.is_err() {
+                        let resp = json!({
+                            "status": "failure"
+                        });
+                        while socket.send_str(&resp.to_string(), 0).is_err() {}
+                        continue;
+                    }
+                    let num = res.unwrap();
+                    oidvec.push(num);
+                }
+                let oid_slice = oidvec.as_slice();
+                let agent_addr = "172.24.2.1:161";
+                let community = b"m4kai";
+
+                walk_oid(agent_addr, community, oid_slice);
+
+                //let splitvec : Vec<&str> = oid.split(".").collect();
+                //println!("{:?}", splitvec);
+                //if cmd["oid"].as_str()
+                //let ss : String = cmd["oid"].as_str().unwrap().to_string();
+                let resp_values: Vec<serde_json::Value> = Vec::new();
+                let resp = json!({
+                    "status": "ok",
+                    "data": resp_values
+                });
+                while socket.send_str(&resp.to_string(), 0).is_err() {}
+            } else {
+                let resp = json!({
+                    "status": "failure"
+                });
+                while socket.send_str(&resp.to_string(), 0).is_err() {}
+            }
         } else {
             let resp = json!({
                 "status": "failure"
@@ -94,9 +116,4 @@ fn main() {
         //println!("jee {}", cmd);
     }
 
-    let system_oid = &[1, 3, 6, 1, 2, 1, 1, 9, 1, 2];
-    let agent_addr = "172.24.2.1:161";
-    let community = b"m4kai";
-
-    walk_oid(agent_addr, community, system_oid);
 }
